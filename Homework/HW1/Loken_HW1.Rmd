@@ -3,8 +3,8 @@ title: "Loken_HW1"
 author: "Luke Loken"
 date: 2018-01-30
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 
