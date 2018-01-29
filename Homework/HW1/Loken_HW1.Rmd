@@ -1,10 +1,10 @@
 ---
 title: "Loken_HW1"
 author: "Luke Loken"
-date: 2018-01-30
+date: '2018-01-30'
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 
@@ -12,15 +12,22 @@ output:
   knitr::opts_chunk$set(fig.width=5, fig.height=5, fig.path='Figs/',echo = TRUE)
 ```
   
+```{r, include=F}
+library(plotrix)
+```
+  
 Hi Hilary. Welcome to January. I look forward to learning everything about spatial analyses in R. 
 
 ```{r, echo=FALSE}
+eyex<-c(2.5,3.5)
+eyey<-c(3,3)
 par(mar=c(rep(1,4)))
 plot(x=c(2,4,3), c(3,3,1), ylim=c(1.5,3.5), xlim=c(1.5,4.5), type='n', axes=F, xlab='', ylab='')
-points(x=c(2.5,3.5), c(3,3), pch=1, cex=4)
-points(x=c(2.5,3.5), c(3,3), pch=16)
-lines(seq(2,4,.5), c(2,1.8,1.8,1.8,2), lwd=3)
-lines(c(3,3.2,3), c(2.7,2.2,2.2))
+points(eyex, eyey, pch=21, cex=4, bg='green', col=NA)
+points(eyex, eyey, pch=16, cex=1.25)
+draw.ellipse(eyex, eyey, a=.25, b=0.065, col=NA, border='black', lwd=4)
+lines(seq(2,4,.5), c(2,1.8,1.8,1.8,2), lwd=4)
+lines(c(3,3.2,3), c(2.7,2.2,2.2), lwd=3)
 box(which='plot')
 
 ```
