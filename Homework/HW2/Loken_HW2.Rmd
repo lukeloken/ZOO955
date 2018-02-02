@@ -45,11 +45,22 @@ NLCCRS<-crs(NLC)
 print(NLCCRS)
 ```
 
-Answer: Universal Transverse Mercator, North American Datum 1983
+Answer: USA Contiguous albers equal area, North American Datum 1983
 
 ## Determining if two spatial objects have the same CRS 
+
+Use the `identical()` function
+
+
 ```{r}
 identical(crs(ME), crs(CFL))
+identical(crs(ME), crs(NLC))
 ```
-Use the `identical()` function
+
+Lake Mendota (ME) and the Center for Limnology (CFL) spatial objects have the same CRS.
+
+Lake Mendota does not have the same CRS as the National Land Cover spatial object.
+
+
+
 
