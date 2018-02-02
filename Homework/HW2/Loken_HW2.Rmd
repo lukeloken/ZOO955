@@ -1,0 +1,55 @@
+---
+title: "Loken_HW2"
+author: "Luke Loken"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r setup, include=FALSE}
+  knitr::opts_chunk$set(fig.width=5, fig.height=5, fig.path='Figs/',echo = TRUE)
+```
+  
+```{r, include=FALSE}
+library(sp)
+library(rgdal)
+library(raster)
+ME<-readOGR(paste0("E:/Git_Repo/ZOO955/Data/Shapefiles"), "Mendota_shape")
+NLC<-raster("E:/Git_Repo/ZOO955/Data/Rasters/nlcd_2011_landcover_2011_edition_2014_10_10/nlcd_2011_landcover_2011_edition_2014_10_10.img", package='raster')
+```
+  
+Dear Dr. Dugan:
+
+## Do you know what lake this is? 
+
+```{r, fig1, fig.height = 5, fig.width = 5, echo=F}
+source('MendotaMap.R')
+```
+
+Hint- it might be world famous. 
+
+
+## What is the CRS for the 2011 National Land Cover dataset?
+
+
+```{r, fig2, fig.height = 3.5, fig.width = 5, echo=F}
+par(mar=c(3,3,0.5,0.5))
+plot(NLC, axes=T)
+# points(0,0,pch=10, cex=2, col='darkred')
+# text(500000,0, 'Origin', col='darkred')
+```
+```{r, include=T}
+NLCCRS<-crs(NLC)
+print(NLCCRS)
+```
+
+Answer: Universal Transverse Mercator, North American Datum 1983
+
+## Determining if two spatial objects have the same CRS 
+```{r}
+identical(crs(ME), crs(CFL))
+```
+Use the `identical()` function
+
