@@ -47,7 +47,7 @@ NLCCRS<-crs(NLC)
 print(NLCCRS)
 ```
 
-Answer: USA Contiguous albers equal area, North American Datum 1983
+Answer: USA Contiguous albers equal area
 
 ## Determining if two spatial objects have the same CRS 
 
