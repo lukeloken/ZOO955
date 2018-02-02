@@ -28,7 +28,9 @@ Dear Dr. Dugan:
 source('MendotaMap.R')
 ```
 
-Hint- it might be world famous. 
+Hint1 - It might be world famous.
+
+Hint2 - You might be able to see it from your office.
 
 
 ## What is the CRS for the 2011 National Land Cover dataset?
