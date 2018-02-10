@@ -1,0 +1,113 @@
+---
+title: "Loken_HW3"
+author: "Luke Loken"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r setup, include=FALSE}
+  knitr::opts_chunk$set(fig.width=5, fig.height=5, fig.path='Figs/',echo = TRUE)
+```
+  
+```{r, include=FALSE}
+library(sp)
+library(rgdal)
+library(raster)
+library(sf)
+library(tidyr)
+library(dplyr)
+Lakes_sp <- readOGR(paste0("E:/Git_Repo/ZOO955/Data/Shapefiles"), "yld_study_lakes", stringsAsFactors = F)
+Lakes_sf <- st_read("E:/Git_Repo/ZOO955/Data/Shapefiles/yld_study_lakes.shp", stringsAsFactors = F)
+ME <- Lakes_sf %>% filter(LAKEID == 'ME')
+MO <- Lakes_sf %>% filter(LAKEID == 'MO')
+WI <- Lakes_sf %>% filter(LAKEID == 'WI')
+FI <- Lakes_sf %>% filter(LAKEID == 'FI')
+Lakes_sf_latlong<-st_transform(Lakes_sf, crs=4326)
+```
+  
+Dear Dr. Dugan:
+
+## Question 1: What does `st_buffer` do? 
+
+```{r, fig1, fig.height = 5, fig.width = 6, echo=F}
+ME_500buff<-st_buffer(ME, dist=500)
+ME_500buffminus<-st_buffer(ME, dist=(-500))
+plot(ME_500buff$geometry, lty=2, lwd=2)
+plot(ME$geometry, add=T, col='lightblue', lwd=5)
+plot(ME_500buffminus$geometry, add=T, col=NA,lty=3, lwd=2)
+legend('topleft', c('Outer 500 m buffer', 'Inner 500 m buffer'), bty='n', lty=c(2,3), cex=1, lwd=2)
+```
+
+`st_buffer` creates a new polygon that all points are X distance away from the edge of another polygon. The buffer can extend outward (+) or inward (-).
+
+
+## Question 2: Make a 500 m buffer around the 4 southern LTER lakes, which buffers overlap?
+
+```{r, fig2, fig.height = 5.5, fig.width = 5.5, echo=F, warning=F}
+Lakes_sf500<-st_buffer(Lakes_sf, 500)
+MO_buff<-Lakes_sf500 %>% filter(LAKEID == 'MO')
+Other_buff<-Lakes_sf500 %>% filter(LAKEID != 'MO')
+intersection<-st_intersection(MO_buff, Other_buff)
+plot(Lakes_sf500$geometry, graticule = st_crs(Lakes_sf_latlong), axes=T)
+plot(Lakes_sf$geometry, add=T, col='lightblue')
+plot(intersection$geometry, add=T, col='red')
+box(which='plot')
+```
+
+```{r, fig3, fig.height = 6, fig.width = 6, echo=F, warning=F}
+plot(intersection$geometry, col='red', graticule = st_crs(Lakes_sf_latlong), axes=T)
+plot(MO_buff$geometry, axes = TRUE, add=T)
+plot(Lakes_sf$geometry, add=T, col='lightblue')
+plot(Lakes_sf500$geometry, add=T)
+# plot(intersection$geometry, add=T, col='red')
+box(which='plot')
+
+```
+
+Based on `st_overlaps`, the buffer around Lake Monona (ID#3) overlaps both the Lake Mendota (ID#2) and Lake Wingra (ID#4) buffers. No other polygons overlap.  
+
+```{r}
+overlaps<-st_overlaps(Lakes_sf500)
+names(overlaps)<-Lakes_sf500$LAKE_NAME
+str(overlaps)
+```
+
+
+## Question 3: Increase the size of the lakes by 2x, What percent of Mendota overlaps with Monona?
+
+```{r, include=T, warning=F}
+ME_centroid<-st_centroid(ME)
+ME_points<-st_cast(ME, "POINT")
+
+x<-st_coordinates(ME_points)[,1]
+y<-st_coordinates(ME_points)[,2]
+
+x2<-2*x-st_coordinates(ME_centroid)[,1]
+y2<-2*y-st_coordinates(ME_centroid)[,2]
+
+ME_points2<-st_multipoint(as.matrix(data.frame(x2, y2)))
+ME_points3<-st_sfc(ME_points2)
+
+ME_Lines<-st_multilinestring(ME_points3)
+ME_Polygon<-st_polygonize(ME_Lines)
+
+ME_Polygon2<-st_geometry(ME_Polygon, type = 3)
+st_crs(ME_Polygon2) <- st_crs(ME)
+overlap<-st_intersection(ME_Polygon2, MO)
+```
+```{r, fig4, fig.height = 5, fig.width = 5, echo=F, warning=F}
+plot(ME_Polygon, col=NA, lwd=3)
+plot(Lakes_sf$geometry, col='lightblue', add=T)
+plot(ME_Polygon, col=NA, lwd=3, add=T)
+plot(overlap, add=T, col='red')
+```
+```{r}
+overlap_area<-st_area(overlap)
+BigMendota_area<-st_area(ME_Polygon2)
+as.numeric(overlap_area/BigMendota_area)
+```
+
+7.45% of the expanded Lake Mendota polygong overlaps Lake Monona. 
