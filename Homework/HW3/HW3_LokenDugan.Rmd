@@ -1,0 +1,257 @@
+---
+title: "Loken_HW3"
+author: "Hilary Dugan + Luke Loken"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+```{r setup, include=FALSE}
+  knitr::opts_chunk$set(fig.width=5, fig.height=5, fig.path='Figs/',echo = TRUE)
+```
+  
+  # Hilary's answers
+  
+  ## Question 1
+Define functions from the `sf` package. Good resource: https://en.wikipedia.org/wiki/DE-9IM
+
+`st_intersects` =
+
+`st_disjoint` =
+
+`st_touches` =
+
+`st_crosses` =
+
+`st_within` =
+
+`st_contains` =
+
+`st_overlaps` =
+
+`st_equals` =
+
+`st_covers` =
+
+`st_covered_by` =
+
+`st_equals_exact` =
+
+`st_is_within_distance` =
+
+`st_buffer` =
+
+`st_boundary` =
+
+`st_convexhull` =
+
+`st_union_cascaded` =
+
+`st_simplify` =
+
+`st_triangulate` =
+
+`st_polygonize` =
+
+`st_centroid` =
+
+`st_segmentize` =
+
+`st_union` =
+
+## Question 2 
+**Make a 500 m buffer of the 4 southern LTER lakes. Which buffers overlap?**
+
+*Lakes Data*:
+https://lter.limnology.wisc.edu/dataset/north-temperate-lakes-lter-yahara-lakes-district-boundary
+
+
+```{r, include=T, warning=F, message=F}
+library(sp)
+library(rgdal)
+library(raster)
+library(sf)
+library(tidyr)
+library(dplyr)
+Lakes_sp <- readOGR(paste0("E:/Git_Repo/ZOO955/Data/Shapefiles"), "yld_study_lakes", stringsAsFactors = F)
+Lakes_sf <- st_read("E:/Git_Repo/ZOO955/Data/Shapefiles/yld_study_lakes.shp", stringsAsFactors = F)
+
+#Make individual lake objects
+ME <- Lakes_sf %>% filter(LAKEID == 'ME')
+MO <- Lakes_sf %>% filter(LAKEID == 'MO')
+WI <- Lakes_sf %>% filter(LAKEID == 'WI')
+FI <- Lakes_sf %>% filter(LAKEID == 'FI')
+
+#Transform to lat/long for axes plotting
+Lakes_sf_latlong <- st_transform(Lakes_sf, crs=4326)
+
+#Merging Hilary's and Luke's objects
+lakes <- Lakes_sf
+
+# What are the lake IDs?
+ids <- lakes$LAKEID
+names <- lakes$LAKE_NAME
+```
+  
+
+
+Make 500 m buffer 
+```{r, message=FALSE,warning=FALSE}
+buffer500 = st_buffer(lakes,500)
+#Check if buffers overlap
+st_overlaps(buffer500)
+```
+
+We know the order of the lake IDS (FI, ME, MO, WI). So based on the overlap matrix. 
+
+* Mendota overlaps with Monona. 
+* Monona overlaps with Mendota and Wingra
+* Wingra overlaps with Monona
+
+**Or we can add lake ids to table**
+
+```{r, message=FALSE,warning=FALSE}
+# Repeat with sparse=False
+overlaps <- st_overlaps(buffer500, sparse = FALSE)
+colnames(overlaps) <- ids
+rownames(overlaps) <- ids
+print(overlaps)
+```
+
+
+## Question 3
+**Increase the size of the lakes by 2x. What is the percent of Mendota that overlaps with Monona?**
+
+Note: 
+
+* You can't use a buffer because that does not retain the shape of the lakes. 
+* You can't just multiply the lakes x2, because that multiplies the coordinates. You end up with the lakes somewhere other than Wisconsin. 
+
+Instead:
+
+* Find the distance from the edge of the lake to the centroid. Multiply these distances by 2. 
+
+```{r, message=FALSE,warning=FALSE}
+# Take just the geometry of the lakes 
+glakes = st_geometry(lakes)
+# Find the centroid
+cntrd = st_centroid(glakes)
+
+# Find distance from edge of lakes to centroid
+cDist = (glakes - cntrd) 
+# Multiply this distance by 2 and add back to centroid 
+glakes2 = cDist * 2 + cntrd
+
+# Find the intersection between Mendota and Monona. We know these are lakes 2 and 3. 
+int = st_intersection(glakes2[2],glakes2[3])
+# What is the size difference between the intersection and Mendota
+st_area(int)/ st_area(glakes2[2])
+```
+**The percent of Mendota that overlaps with Monona is 19.4%**
+
+If you want to double check by plotting 
+```{r, message=FALSE,warning=FALSE}
+# Plot glakes and centroid
+plot(glakes,col='cadetblue')
+plot(cntrd,col='red3',pch=16,add=T)
+# Plot lakes double the size
+plot(glakes2,border='red4',add=T)
+# Plot intersection 
+plot(int,col='red4',add=T)
+```
+  
+  
+  
+  
+
+Dear Dr. Dugan:
+
+## Question 1: What does `st_buffer` do? 
+
+```{r, fig1, fig.height = 5, fig.width = 6, echo=F}
+ME_centroid<-st_centroid(ME)
+ME_centroidbuff<-st_buffer(ME_centroid, dist=300)
+ME_centroidbuffminus<-st_buffer(ME_centroid, dist=(-100))
+ME_500buff<-st_buffer(ME, dist=500)
+ME_500buffminus<-st_buffer(ME, dist=(-500))
+plot(ME_500buff$geometry, lty=2, lwd=2)
+plot(ME$geometry, add=T, col='lightblue', lwd=5)
+plot(ME_500buffminus$geometry, add=T, col=NA,lty=2, lwd=2, border='red')
+legend('topleft', c('Outer 500 m', 'Inner 500 m', 'Centroid 300 m'), bty='n', lty=c(2,2, 1), cex=1, lwd=2, title='Buffer', col=c('black', 'red', 'limegreen'))
+plot(ME_centroidbuff$geometry, col=NA, add=T, lty=1, lwd=2, border='limegreen')
+plot(ME_centroid$geometry, pch=18, col='mediumpurple4', add=T)
+```
+
+`st_buffer` creates a new polygon that all points are X distance away from the edge of another polygon, line or point. The buffer can extend outward (+) or inward (-) of a polygon.
+
+
+## Question 2: Make a 500 m buffer around the 4 southern LTER lakes, which buffers overlap?
+
+```{r, fig2, fig.height = 5.5, fig.width = 5.5, echo=F, warning=F}
+Lakes_sf500<-st_buffer(Lakes_sf, 500)
+MO_buff<-Lakes_sf500 %>% filter(LAKEID == 'MO')
+Other_buff<-Lakes_sf500 %>% filter(LAKEID != 'MO')
+intersection<-st_intersection(MO_buff, Other_buff)
+plot(Lakes_sf500$geometry, graticule = st_crs(Lakes_sf_latlong), axes=T)
+plot(Lakes_sf$geometry, add=T, col='lightblue')
+plot(intersection$geometry, add=T, col='red')
+box(which='plot')
+```
+
+```{r, fig3, fig.height = 6, fig.width = 6, echo=F, warning=F}
+plot(intersection$geometry, col='red', graticule = st_crs(Lakes_sf_latlong), axes=T)
+plot(MO_buff$geometry, axes = TRUE, add=T)
+plot(Lakes_sf$geometry, add=T, col='lightblue')
+plot(Lakes_sf500$geometry, add=T)
+# plot(intersection$geometry, add=T, col='red')
+box(which='plot')
+
+```
+
+Based on `st_overlaps`, the buffer around Lake Monona (ID#3) overlaps both the Lake Mendota (ID#2) and Lake Wingra (ID#4) buffers. No other polygons overlap.  
+
+```{r}
+overlaps<-st_overlaps(Lakes_sf500)
+names(overlaps)<-Lakes_sf500$LAKE_NAME
+str(overlaps)
+```
+
+
+## Question 3: Increase the size of the lakes by 2x, What percent of Mendota overlaps with Monona?
+
+```{r, include=T, warning=F}
+ME_centroid<-st_centroid(ME)
+ME_points<-st_cast(ME, "POINT")
+
+x<-st_coordinates(ME_points)[,1]
+y<-st_coordinates(ME_points)[,2]
+
+x2<-2*x-st_coordinates(ME_centroid)[,1]
+y2<-2*y-st_coordinates(ME_centroid)[,2]
+
+ME_points2<-st_multipoint(as.matrix(data.frame(x2, y2)))
+ME_points3<-st_sfc(ME_points2)
+
+ME_Lines<-st_multilinestring(ME_points3)
+ME_Polygon<-st_polygonize(ME_Lines)
+
+ME_Polygon2<-st_geometry(ME_Polygon, type = 3)
+st_crs(ME_Polygon2) <- st_crs(ME)
+overlap<-st_intersection(ME_Polygon2, MO)
+```
+```{r, fig4, fig.height = 5, fig.width = 5, echo=F, warning=F}
+plot(ME_Polygon, col=NA, lwd=3)
+plot(Lakes_sf$geometry, col='lightblue', add=T)
+plot(ME_Polygon, col=NA, lwd=3, add=T)
+plot(overlap, add=T, col='red')
+```
+```{r}
+overlap_area<-st_area(overlap)
+BigMendota_area<-st_area(ME_Polygon2)
+as.numeric(overlap_area/BigMendota_area)
+```
+
+7.45% of the expanded Lake Mendota polygon overlaps Lake Monona. 
+
