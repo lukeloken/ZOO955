@@ -33,15 +33,20 @@ Dear Dr. Dugan:
 ## Question 1: What does `st_buffer` do? 
 
 ```{r, fig1, fig.height = 5, fig.width = 6, echo=F}
+ME_centroid<-st_centroid(ME)
+ME_centroidbuff<-st_buffer(ME_centroid, dist=300)
+ME_centroidbuffminus<-st_buffer(ME_centroid, dist=(-100))
 ME_500buff<-st_buffer(ME, dist=500)
 ME_500buffminus<-st_buffer(ME, dist=(-500))
 plot(ME_500buff$geometry, lty=2, lwd=2)
 plot(ME$geometry, add=T, col='lightblue', lwd=5)
-plot(ME_500buffminus$geometry, add=T, col=NA,lty=3, lwd=2)
-legend('topleft', c('Outer 500 m buffer', 'Inner 500 m buffer'), bty='n', lty=c(2,3), cex=1, lwd=2)
+plot(ME_500buffminus$geometry, add=T, col=NA,lty=2, lwd=2, border='red')
+legend('topleft', c('Outer 500 m', 'Inner 500 m', 'Centroid 300 m'), bty='n', lty=c(2,2, 1), cex=1, lwd=2, title='Buffer', col=c('black', 'red', 'limegreen'))
+plot(ME_centroidbuff$geometry, col=NA, add=T, lty=1, lwd=2, border='limegreen')
+plot(ME_centroid$geometry, pch=18, col='mediumpurple4', add=T)
 ```
 
-`st_buffer` creates a new polygon that all points are X distance away from the edge of another polygon. The buffer can extend outward (+) or inward (-).
+`st_buffer` creates a new polygon that all points are X distance away from the edge of another polygon, line or point. The buffer can extend outward (+) or inward (-) of a polygon.
 
 
 ## Question 2: Make a 500 m buffer around the 4 southern LTER lakes, which buffers overlap?
@@ -110,4 +115,4 @@ BigMendota_area<-st_area(ME_Polygon2)
 as.numeric(overlap_area/BigMendota_area)
 ```
 
-7.45% of the expanded Lake Mendota polygong overlaps Lake Monona. 
+7.45% of the expanded Lake Mendota polygon overlaps Lake Monona. 
