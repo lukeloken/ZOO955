@@ -300,6 +300,7 @@ plot(int, col=c('red'), add=T)
 ```
 
 This does not work if you use the sf object. This code creates an error
+
 `lakes3 <- lakes*2 - st_centroid(lakes)`
 
 But if you use the `st_geometry` function you can do geometry math
