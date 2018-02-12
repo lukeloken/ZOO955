@@ -3,8 +3,8 @@ title: "Loken_HW3"
 author: "Hilary Dugan + Luke Loken"
 date: '`r format(Sys.Date(), "%B %d, %Y")`'
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 
@@ -255,3 +255,56 @@ as.numeric(overlap_area/BigMendota_area)
 
 7.45% of the expanded Lake Mendota polygon overlaps Lake Monona. 
 
+
+
+# More code to work through question 3
+
+```{r, include=T, warning=F}
+# Take just the geometry of the lakes 
+glakes = st_geometry(lakes)
+# Find the centroid
+cntrd = st_centroid(glakes)
+
+plot(glakes, col='lightblue')
+plot(cntrd, add=T, pch=16)
+
+# Find distance from edge of lakes to centroid
+cDist = (glakes - cntrd) 
+plot(cDist[c(2,3,4,1)], col=c('red', 'blue', 'yellow', 'plum3'), axes=T)
+```
+
+Note that `cntrd` is multiple polygon, where all polygons are centered at zero (centroid) and the x/y coordinates are distances **i.e., not coordinates** 
+
+```{r, include=T, warning=F}
+# Multiply this distance by 2 and add back to centroid 
+glakes2 = cDist * 2 + cntrd
+
+# Find the intersection between Mendota and Monona. We know these are lakes 2 and 3. 
+int = st_intersection(glakes2[2],glakes2[3])
+# What is the size difference between the intersection and Mendota
+st_area(int)/ st_area(glakes2[2])
+```
+
+## Another way to do it, without creating a 'distance' polygon
+
+```{r, include=T, warning=F}
+# using geometry you can simply double the coordinates and subtract by the centroid
+glakes3 = glakes*2 - cntrd
+
+int = st_intersection(glakes3[2],glakes3[3])
+
+st_area(int)/ st_area(glakes3[2])
+
+plot(glakes3[2:3], col=c('blue', 'lightblue'))
+plot(int, col=c('red'), add=T)
+```
+
+This does not work if you use the sf object. This code creates an error
+`lakes3 <- lakes*2 - st_centroid(lakes)`
+
+But if you use the `st_geometry` function you can do geometry math
+```{r, include=T, warning=F}
+biglakes <- st_geometry(lakes)*2 - st_centroid(st_geometry(lakes))
+plot(biglakes, col=c('red', 'blue', 'yellow', 'plum3'))
+plot(lakes, add=T, col=NA)
+```
