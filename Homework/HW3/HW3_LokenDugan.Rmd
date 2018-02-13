@@ -3,8 +3,8 @@ title: "Loken_HW3"
 author: "Hilary Dugan + Luke Loken"
 date: '`r format(Sys.Date(), "%B %d, %Y")`'
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 
@@ -273,7 +273,7 @@ plot(ME2$geometry, add=T, col='yellowgreen')
 plot(ME$geometry, add=T, col='navy')
 
 ```
-```{r, fig4, fig.height = 5, fig.width = 5, echo=F, warning=F}
+```{r, fig4, fig.height = 5, fig.width = 5, include=T, warning=F}
 plot(ME_Polygon, col=NA, lwd=3)
 plot(Lakes_sf$geometry, col='lightblue', add=T)
 plot(ME_Polygon, col=NA, lwd=3, add=T)
@@ -351,6 +351,4 @@ str(lakes)
 class(glakes)
 glakes
 str(glakes)
-
-ME$geometry[[1]][[1]]
 ```
