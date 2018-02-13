@@ -309,3 +309,14 @@ biglakes <- st_geometry(lakes)*2 - st_centroid(st_geometry(lakes))
 plot(biglakes, col=c('red', 'blue', 'yellow', 'plum3'))
 plot(lakes, add=T, col=NA)
 ```
+
+##Look at difference between objects
+```{r, include=T, warning=F}
+class(lakes)
+lakes
+str(lakes)
+
+class(glakes)
+glakes
+str(glakes)
+```
