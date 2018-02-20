@@ -11,108 +11,90 @@ output:
 ```{r setup, include=FALSE}
   knitr::opts_chunk$set(fig.width=5, fig.height=5, fig.path='Figs/',echo = TRUE)
 ```
-  
+
 ```{r, include=FALSE}
-library(sp)
-library(rgdal)
-library(raster)
-library(sf)
 library(tidyr)
 library(dplyr)
-Lakes_sp <- readOGR(paste0("E:/Git_Repo/ZOO955/Data/Shapefiles"), "yld_study_lakes", stringsAsFactors = F)
-Lakes_sf <- st_read("E:/Git_Repo/ZOO955/Data/Shapefiles/yld_study_lakes.shp", stringsAsFactors = F)
-ME <- Lakes_sf %>% filter(LAKEID == 'ME')
-MO <- Lakes_sf %>% filter(LAKEID == 'MO')
-WI <- Lakes_sf %>% filter(LAKEID == 'WI')
-FI <- Lakes_sf %>% filter(LAKEID == 'FI')
-Lakes_sf_latlong<-st_transform(Lakes_sf, crs=4326)
+library(sp)
+library(rgdal, verbose=F)
+library(SDMTools)
+library(raster,verbose = T)
+nlcd = raster('../../Data/Rasters/MendotaNLCD.grd')
+ME<-readOGR("../../Data/Shapefiles", "Mendota_shape", verbose=F)
+ME2<-spTransform(ME, crs(nlcd))
 ```
-  
+
 Dear Dr. Dugan:
 
-## Question 1: What does `st_buffer` do? 
+## Question 1: What is the percent of forest in the Mendota catchment?
 
-```{r, fig1, fig.height = 5, fig.width = 6, echo=F}
-ME_centroid<-st_centroid(ME)
-ME_centroidbuff<-st_buffer(ME_centroid, dist=300)
-ME_centroidbuffminus<-st_buffer(ME_centroid, dist=(-100))
-ME_500buff<-st_buffer(ME, dist=500)
-ME_500buffminus<-st_buffer(ME, dist=(-500))
-plot(ME_500buff$geometry, lty=2, lwd=2)
-plot(ME$geometry, add=T, col='lightblue', lwd=5)
-plot(ME_500buffminus$geometry, add=T, col=NA,lty=2, lwd=2, border='red')
-legend('topleft', c('Outer 500 m', 'Inner 500 m', 'Centroid 300 m'), bty='n', lty=c(2,2, 1), cex=1, lwd=2, title='Buffer', col=c('black', 'red', 'limegreen'))
-plot(ME_centroidbuff$geometry, col=NA, add=T, lty=1, lwd=2, border='limegreen')
-plot(ME_centroid$geometry, pch=18, col='mediumpurple4', add=T)
-```
+```{r, fig1, fig.width = 4, echo=F}
 
-`st_buffer` creates a new polygon that all points are X distance away from the edge of another polygon, line or point. The buffer can extend outward (+) or inward (-) of a polygon.
+nlcd_for <- nlcd
+nlcd_for@legend@colortable[2:length(nlcd_for@legend@colortable)] = 'moccasin'
+nlcd_for@legend@colortable[1] = 'white'
+nlcd_for@legend@colortable[41:43] = 'darkgreen'
 
-
-## Question 2: Make a 500 m buffer around the 4 southern LTER lakes, which buffers overlap?
-
-```{r, fig2, fig.height = 5.5, fig.width = 5.5, echo=F, warning=F}
-Lakes_sf500<-st_buffer(Lakes_sf, 500)
-MO_buff<-Lakes_sf500 %>% filter(LAKEID == 'MO')
-Other_buff<-Lakes_sf500 %>% filter(LAKEID != 'MO')
-intersection<-st_intersection(MO_buff, Other_buff)
-plot(Lakes_sf500$geometry, graticule = st_crs(Lakes_sf_latlong), axes=T)
-plot(Lakes_sf$geometry, add=T, col='lightblue')
-plot(intersection$geometry, add=T, col='red')
-box(which='plot')
-```
-
-```{r, fig3, fig.height = 6, fig.width = 6, echo=F, warning=F}
-plot(intersection$geometry, col='red', graticule = st_crs(Lakes_sf_latlong), axes=T)
-plot(MO_buff$geometry, axes = TRUE, add=T)
-plot(Lakes_sf$geometry, add=T, col='lightblue')
-plot(Lakes_sf500$geometry, add=T)
-# plot(intersection$geometry, add=T, col='red')
+par(mar=rep(.25, 4), mfrow=c(1,1))
+bbox<-bbox(nlcd)
+plot(ME2, col='lightblue', border=NA, xlim=bbox[1,1:2], ylim=bbox[2,1:2], xaxs='i',  yaxs='i')
+plot(nlcd_for, add=T)
+plot(ME2, add=T, col='lightblue', border=NA)
+legend("topleft", legend = c("Forest", "Non-forest watershed", "Lake Mendota"), fill = c('darkgreen', 'moccasin', 'lightblue'), bty='n')
 box(which='plot')
 
+usr<-par('usr')
+Scalebar(x=usr[2]-15000, y=usr[3]+2000, distance=10000, scale=0.001, unit='km')  
+
 ```
 
-Based on `st_overlaps`, the buffer around Lake Monona (ID#3) overlaps both the Lake Mendota (ID#2) and Lake Wingra (ID#4) buffers. No other polygons overlap.  
+```{r, include=T}
 
-```{r}
-overlaps<-st_overlaps(Lakes_sf500)
-names(overlaps)<-Lakes_sf500$LAKE_NAME
-str(overlaps)
+#Calculate with Lake Mendota included in catchment
+nlcdVals = freq(nlcd)
+
+# Sum values, minus zero values 
+total = as.data.frame(nlcdVals) %>% dplyr::filter(value >= 1) %>%
+  summarise_at('count',sum)
+
+# Total forest counts
+forest = as.data.frame(nlcdVals) %>% dplyr::filter(value >= 41 & value <= 43) %>%
+  summarise_at('count',sum)
+
+perFor = forest/total
+perFor
+
+#Remove Lake Mendota from catchment
+#Mask raster by Lake Mendota
+nlcd_nolake <- mask(nlcd, ME2, inverse=T)
+nlcdVals_nolake = freq(nlcd_nolake)
+
+total_nolake = as.data.frame(nlcdVals_nolake) %>% dplyr::filter(value >= 1) %>%
+  summarise_at('count',sum)
+
+# Total forest counts
+forest_nolake = as.data.frame(nlcdVals_nolake) %>% dplyr::filter(value >= 41 & value <= 43) %>%
+  summarise_at('count',sum)
+
+perFor_nolake = forest_nolake/total_nolake
+perFor_nolake
+
 ```
 
+4.68% of Lake Mendota's catchment is forest if you exclude Lake Mendota from the total catchment area. If you include Lake Mendota in its catchment (which I would be inclined to do), the percent forest would be 4.39%
 
-## Question 3: Increase the size of the lakes by 2x, What percent of Mendota overlaps with Monona?
+## Question 2: What is the area of forest in the Mendota catchment?
 
-```{r, include=T, warning=F}
-ME_centroid<-st_centroid(ME)
-ME_points<-st_cast(ME, "POINT")
-
-x<-st_coordinates(ME_points)[,1]
-y<-st_coordinates(ME_points)[,2]
-
-x2<-2*x-st_coordinates(ME_centroid)[,1]
-y2<-2*y-st_coordinates(ME_centroid)[,2]
-
-ME_points2<-st_multipoint(as.matrix(data.frame(x2, y2)))
-ME_points3<-st_sfc(ME_points2)
-
-ME_Lines<-st_multilinestring(ME_points3)
-ME_Polygon<-st_polygonize(ME_Lines)
-
-ME_Polygon2<-st_geometry(ME_Polygon, type = 3)
-st_crs(ME_Polygon2) <- st_crs(ME)
-overlap<-st_intersection(ME_Polygon2, MO)
-```
-```{r, fig4, fig.height = 5, fig.width = 5, echo=F, warning=F}
-plot(ME_Polygon, col=NA, lwd=3)
-plot(Lakes_sf$geometry, col='lightblue', add=T)
-plot(ME_Polygon, col=NA, lwd=3, add=T)
-plot(overlap, add=T, col='red')
-```
-```{r}
-overlap_area<-st_area(overlap)
-BigMendota_area<-st_area(ME_Polygon2)
-as.numeric(overlap_area/BigMendota_area)
+```{r, include=T}
+res<-res(nlcd)
+crs(nlcd) #check units
+pixelarea<-res[1]*res[2] #in m2
+forest_area <- forest*pixelarea/1000000
+names(forest_area)[1]<-'area_km2'
+print(forest_area)
 ```
 
-7.45% of the expanded Lake Mendota polygon overlaps Lake Monona. 
+The total area of forest in the Lake Mendota watershed is 26.4 km2
+
+
+
