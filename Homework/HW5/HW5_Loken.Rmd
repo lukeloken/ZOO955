@@ -3,8 +3,8 @@ title: "Loken_HW5"
 author: "Luke Loken"
 date: '`r format(Sys.Date(), "%B %d, %Y")`'
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 
@@ -51,7 +51,7 @@ Direct quote from (http://berkeleyearth.org), "climatology: For each grid cell, 
 # br_WI
 August = br_WI[[8]] 
 par(mgp=c(2,.5,0), tck=-.02)
-plot(August, axes=T, col=brewer.pal(n = 12, name = "RdYlBu") , xlab=expression(paste('Longitude (', degree, ')')), ylab=expression(paste('Latitude (', degree, ')')))
+plot(August, axes=T, col=rev(brewer.pal(n = 8, name = "RdYlBu")) , xlab=expression(paste('Longitude (', degree, ')')), ylab=expression(paste('Latitude (', degree, ')')))
 plot(WI, add=T)
 mtext('Mean August temperature',3,.5)
 mtext(expression(paste('', degree, 'C')),4, 4.5)
