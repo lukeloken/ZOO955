@@ -33,21 +33,22 @@ ME<-spTransform(ME, crs(br_WI))
 
 **Dear Dr. Dugan:**
 
-Use the 'Data/WI_CAVG_LatLong1.nc' file. In this lecture we dealt with the "temperature" variable. This file is the "climatology" variable.
 
-Find the metadata for these dataset. http://berkeleyearth.org/data/. We are using Gridded Data. Monthly Land. Average Temperature (TAVG; 1753 – Recent).
+*Use the 'Data/WI_CAVG_LatLong1.nc' file. In this lecture we dealt with the "temperature" variable. This file is the "climatology" variable.*
+
+*Find the metadata for these dataset. http://berkeleyearth.org/data/. We are using Gridded Data. Monthly Land. Average Temperature (TAVG; 1753 – Recent).*
 
 ## Question 1: The climatology variable is a monthly average for each cell. What years does this average represent?
 
 Direct quote from (http://berkeleyearth.org), "climatology: For each grid cell, an estimate of the true surface temperature for each month during the period January 1951 to December 1980 reported in degrees C."
 
-**Thus each climatology value is the average monthly temperature between 1951 and 1980**
+**Each climatology value is the average monthly temperature between 1951 and 1980**
 
 
 ## Question 2: Plot the August averages for Wisconsin.
 
 
-```{r, fig1, fig.width = 5, echo=F}
+```{r, fig1, fig.height = 4.5, echo=F}
 # br_WI
 August = br_WI[[8]] 
 par(mgp=c(2,.5,0), tck=-.02)
@@ -67,7 +68,7 @@ output = data.frame(Month = 1:12, Temp = METemp[[1]][1,])
 row.names(output) <- month.abb[1:12]
 ```
 
-```{r, fig2, fig.width = 6, echo=F}
+```{r, fig2, fig.width = 6, fig.height=4, echo=F}
 par(mar=c(3,3,3,1),mgp=c(2,0.5,0), tck=-.01)
 plot(output$Month,output$Temp,pch=16, type='o', xaxt='n', las=1, col=adjustcolor('red4',0.9), xlab='', ylab=expression(paste('Temperature (', degree, 'C)')))
 abline(h=0, col='lightgrey', lty=3)
