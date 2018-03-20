@@ -1,0 +1,139 @@
+---
+title: "Loken_HW7"
+author: "Luke Loken"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+# Load options
+  knitr::opts_chunk$set(fig.path='Figs/',echo = TRUE)
+# This script uses spatial data created using 'HW&_PrepareSpatialOjbects.R', which is located in the 'R' folder. Use source('../../R/HW7_PrepareSpatialObjects.R') to recrop raster data and to re-calculate percentages of land covers by pixel
+```
+
+**Dear Dr. Dugan:**
+
+## Find an example of negative spatial autocorrelation in ecology
+
+Many animal species create nests. Through competetion and resource limitation, nests often are spatially organized, so that nests are not usually found near each other. This creates negative spatial autocorrelation at short distance classes, as it is unlikely to find two nests within a small area. At greater distances, finding another nest becomes increasing common. These types of clustering are called over-dispersion, as nests appear evenly spaced throughout the landscape (imagine a regular polka dot pattern). Nests occur further apart from each other when compared to a randommly spaced landscape.
+
+An example of this phenomenon are termite mounds in South Africa (Davies et al. 2014), although these patterns have been identified elsewhere. 
+
+Davies, A. B., Levick, S. R., Asner, G. P., Robertson, M. P., van Rensburg, B. J. and Parr, C. L. (2014), Spatial variability and abiotic determinants of termite mounds throughout a savanna catchment. Ecography, 37: 852–862. doi:10.1111/ecog.00532
+
+```{r, include=FALSE}
+
+#Load data and libraries
+library(plyr)
+library(tidyr)
+library(dplyr)
+library(sp)
+library(rgdal, verbose=F)
+library(SDMTools)
+library(raster,verbose = F)
+library(RColorBrewer)
+library(rgeos)
+library(spdep)
+library(viridis)
+
+
+nlcd <- raster("../../Data/Rasters/nlcd_2011_landcover_2011_edition_2014_10_10/nlcd_2011_landcover_2011_edition_2014_10_10.img", package='raster')
+
+counties <- readOGR('../../Data/Shapefiles/County_Boundaries_24K.shp', layer='County_Boundaries_24K',stringsAsFactors = F)
+counties <- spTransform(counties,  crs(nlcd))
+
+states <-  readOGR("../../Data/Shapefiles",  'StateOutlines')
+states <- spTransform(states,  crs(nlcd))
+WI <- states[states$NAME=='Wisconsin',]
+
+nlcdWI <- readRDS("../../outputs/WIcroppedNLC.rds")
+
+# Recalculate percentages per county and to recrop Wisconsin Land Cover
+# source('../../R/HW7_PrepareSpatialObjects.R') 
+
+```
+
+## Use the county and NLCD datasets for WI. Compute Moran's I and p-value (using adjacent polygons) for 'percent developed' and 'percent forest'
+
+```{r, fig1, fig.height=4, fig.width=4, fig.align='center', echo=F}
+
+par(mar=c(0,0,2,0), mfrow=c(1,1))
+plot(WI, lwd=4,border='black')
+plot(nlcdWI, add=T)
+plot(counties, add=T, border='black', lwd=2, lty=3)
+plot(WI, lwd=4, add=T, border='black')
+mtext('Wisconsin land cover and counties', 3,0)
+
+```
+
+
+```{r, fig2, fig.width = 7.5, fig.align='center', fig.height=4, echo=F}
+#Load in data table
+pfu<-read.csv('../../outputs/WIforesturban_NLCD.csv', stringsAsFactors = F, header=T)
+#add percentages to county dataframe
+counties$perFor<-pfu$percent_forest[match(counties$COUNTY_NAM, pfu$counties)]
+counties$perUrb<-pfu$percent_urban[match(counties$COUNTY_NAM, pfu$counties)]
+
+# Because we're going to keep plotting counties, simplify data
+cSimp <- gSimplify(counties, tol=5000, topologyPreserve=TRUE)
+
+pf = (1:5)[cut(counties$perFor,breaks = c(0,5,10,25, 50, 100))]
+pu = (1:5)[cut(counties$perUrb,breaks = c(0,5,10,25, 50, 100))]
+
+forcolors<-brewer.pal(5, 'Greens')
+urbcolors<-brewer.pal(5, 'Reds')
+
+par(mar=c(0,0,2,0), mfrow=c(1,2))
+
+plot(counties,col = urbcolors[pu])
+legend('topright', inset=0.02, legend = c('0-5%','5-10%','10-25%', '25-50%', '50-100%'), fill = urbcolors, bty='n', y.intersp=.8, cex=0.85)
+mtext('Percent Developed', 3,0)
+
+plot(counties,col = forcolors[pf])
+legend('topright',inset=0.02, legend = c('0-5%','5-10%','10-25%', '25-50%', '50-100%'), fill = forcolors, bty='n', y.intersp=.8, cex=0.85)
+mtext('Percent Forest', 3,0)
+
+```
+
+```{r, include=T, fig3, fig.width = 5, fig.height=5}
+# Get centroid coordinates and plot
+xy <- coordinates(counties)
+
+# Construct neighbours list from polygon list
+w <- poly2nb(counties, row.names= counties$OBJECTID)
+
+# Plot the links between the polygons
+plot(cSimp, main='Adjacent polygons')
+plot(w, xy, col='red4', add=TRUE, lwd=2)
+
+wm.w <-  nb2listw(w, style='B')
+
+df<-data.frame(matrix(nrow=2, ncol=5))
+names(df)<-c('LandCover', 'Moran I (X-prod)', 'p-value', 'Moran I (MC)', 'p-value')
+df$LandCover<- c('Forest', 'Developed')
+
+ForI <- moran.test(counties$perFor, wm.w, randomisation=FALSE)
+UrbI <- moran.test(counties$perUrb, wm.w, randomisation=FALSE)
+
+df[1, 2] <- signif(ForI$estimate[1], 3)
+df[2, 2] <- signif(UrbI$estimate[1], 3)
+
+df[1, 3] <- signif(ForI$p.value, 3)
+df[2, 3] <- signif(UrbI$p.value, 3)
+
+ForMC <- moran.mc(counties$perFor, wm.w, nsim=999)
+UrbMC <- moran.mc(counties$perUrb, wm.w, nsim=999)
+
+df[1, 4] <- signif(ForMC$statistic[1], 3)
+df[2, 4] <- signif(UrbMC$statistic[1], 3)
+
+df[1, 5] <- signif(ForMC$p.value, 3)
+df[2, 5] <- signif(UrbMC$p.value, 3)
+
+print(df)
+
+```
+
+Both Forest and Urban (developed) land covers are spatially autocorrelated. Forest has greater spatial autocorrelation than urban (Moran I of 0.78 and 0.36, respectively), but both are highly significant (p-value<0.001). 
