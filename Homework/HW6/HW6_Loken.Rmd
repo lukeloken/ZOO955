@@ -1,0 +1,87 @@
+---
+title: "Loken_HW5"
+author: "Luke Loken"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+```{r setup, include=FALSE}
+#Load options
+  knitr::opts_chunk$set(fig.width=5, fig.height=5, fig.path='Figs/',echo = TRUE)
+```
+
+```{r, include=FALSE}
+#Load data and libraries
+library(tidyr)
+library(dplyr)
+library(sp)
+library(rgdal, verbose=F)
+library(SDMTools)
+library(raster,verbose = T)
+library(RColorBrewer)
+br <- brick('../../Data/Rasters/Complete_TAVG_LatLong1.nc')
+br_WI <- brick('../../Data/Rasters/WI_CAVG_LatLong1.nc')
+states <-  readOGR("../../Data/Shapefiles",  'StateOutlines')
+states<-spTransform(states,  crs(br_WI))
+WI<-states[states$NAME=='Wisconsin',]
+ME<-readOGR("../../Data/Shapefiles", "Mendota_shape", verbose=F)
+ME<-spTransform(ME, crs(br_WI))
+```
+
+**Dear Dr. Dugan:**
+
+
+*Use the 'Data/WI_CAVG_LatLong1.nc' file. In this lecture we dealt with the "temperature" variable. This file is the "climatology" variable.*
+
+*Find the metadata for these dataset. http://berkeleyearth.org/data/. We are using Gridded Data. Monthly Land. Average Temperature (TAVG; 1753 – Recent).*
+
+## Question 1: The climatology variable is a monthly average for each cell. What years does this average represent?
+
+Direct quote from (http://berkeleyearth.org), "climatology: For each grid cell, an estimate of the true surface temperature for each month during the period January 1951 to December 1980 reported in degrees C."
+
+**Each climatology value is the average monthly temperature between 1951 and 1980**
+
+
+## Question 2: Plot the August averages for Wisconsin.
+
+
+```{r, fig1, fig.height = 4.5, echo=F}
+# br_WI
+August = br_WI[[8]] 
+par(mgp=c(2,.5,0), tck=-.02)
+plot(August, axes=T, col=rev(brewer.pal(n = 8, name = "RdYlBu")) , xlab=expression(paste('Longitude (', degree, ')')), ylab=expression(paste('Latitude (', degree, ')')))
+plot(WI, add=T)
+mtext('Mean August temperature',3,.5)
+mtext(expression(paste('', degree, 'C')),4, 4.5)
+
+```
+
+## Extract the averages for the cell over Lake Mendota. Plot the monthly temperature averages.
+
+
+```{r, include=T}
+METemp = extract(br_WI,y = ME)
+output = data.frame(Month = 1:12, Temp = METemp[[1]][1,])
+row.names(output) <- month.abb[1:12]
+```
+
+```{r, fig2, fig.width = 6, fig.height=4, echo=F}
+par(mar=c(3,3,3,1),mgp=c(2,0.5,0), tck=-.01)
+plot(output$Month,output$Temp,pch=16, type='o', xaxt='n', las=1, col=adjustcolor('red4',0.9), xlab='', ylab=expression(paste('Temperature (', degree, 'C)')))
+abline(h=0, col='lightgrey', lty=3)
+mtext('Monthly mean air temperatures (1951-1980)', 3, 1.5)
+mtext('for Lake Mendota, WI', 3, 0.25)
+axis(1, at=1:12, labels=month.abb[1:12])
+
+```
+
+## What is the August average for Lake Mendota?
+
+```{r, include=T}
+output[which(output$Month==8),]
+```
+
+**The average August air temperature over Lake Mendota is 20.19 degrees celcius.**
