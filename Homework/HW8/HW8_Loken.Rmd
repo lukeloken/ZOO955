@@ -3,8 +3,8 @@ title: "Loken_HW8"
 author: "Luke Loken"
 date: '`r format(Sys.Date(), "%B %d, %Y")`'
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -50,12 +50,12 @@ proj4string(MEoutline2)<-crs(yld)
 ```{r, fig1, fig.height=5, fig.width=7, fig.align='center', echo=F}
 
 par(mar=c(2,2,1,1))
-plot(MEbathy, border='grey')
+plot(MEbathy, border='darkgrey', col='lightblue')
 # plot(yld, add=T, lwd=3, border='purple')
 # plot(MEoutline, add=T, lwd=3, border='blue')
 plot(MEoutline2, add=T, lty=1, lwd=2, border='black')
-plot(MEcsv, add=T, col='purple')
-legend('topleft', c('Depth samples', 'Original bathy contours'), pch=c(3,NA), lty=c(NA,1), col=c('purple', 'grey'), bty='n')
+plot(MEcsv, add=T, col='red')
+legend('topleft', c('Depth observations', 'Original bathy contours'), pch=c(3,NA), lty=c(NA,1), col=c('red', 'darkgrey'), bty='n')
 ```
 
 
