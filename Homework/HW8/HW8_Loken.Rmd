@@ -3,8 +3,8 @@ title: "Loken_HW8"
 author: "Luke Loken"
 date: '`r format(Sys.Date(), "%B %d, %Y")`'
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -47,8 +47,9 @@ proj4string(MEcsv)<-crs(yld)
 proj4string(MEoutline2)<-crs(yld)
 ```
 
-```{r, fig1, fig.height=6, fig.width=8, fig.align='center', echo=F}
+```{r, fig1, fig.height=5, fig.width=7, fig.align='center', echo=F}
 
+par(mar=c(2,2,1,1))
 plot(MEbathy, border='grey')
 # plot(yld, add=T, lwd=3, border='purple')
 # plot(MEoutline, add=T, lwd=3, border='blue')
@@ -58,7 +59,7 @@ legend('topleft', c('Depth samples', 'Original bathy contours'), pch=c(3,NA), lt
 ```
 
 
-```{r, fig2, fig.width = 4.5, fig.align='center', fig.height=4, include=T }
+```{r, fig2, fig.width = 4, fig.align='center', fig.height=3.5, include=T }
 
 #Create spatial lines to calculate distance to shore
 MEline<-as(MEoutline2, "SpatialLines") 
@@ -66,7 +67,7 @@ MEcsv$DistToShore<-gDistance(MEcsv, MEline, byid=T)[1,]
 
 # Make polygrid - This is each location to make predictions
 bbox<-MEoutline2@bbox
-pixelsize=200
+pixelsize=100
 data1.grid<-polygrid(seq(bbox[1,1], bbox[1,2], pixelsize), 
                      seq(bbox[2,1], bbox[2,2], pixelsize),
                      borders=MEoutline2@polygons[[1]]@Polygons[[1]]@coords)
@@ -80,33 +81,42 @@ data1.grid$DistToShore<-gDistance(data1.grid, MEline, byid=T)[1,]
 # Convert to gridded (pixels) rather than points
 gridded(data1.grid) <- TRUE
 
-# plot data grid, boundary, and observations
-# plot(data1.grid, border="grey")
-# plot(MEoutline2, add=TRUE, col=NA, lwd=3)
-# plot(MEcsv, add=TRUE, col="red", cex=0.5)
-
 #Create variogram for interpolation
 gs <- gstat(formula=depth_m~1, locations=MEcsv)
 v <- variogram(gs, width=100 )
 v.fit<-fit.variogram(v, vgm(c('Lin', 'Sph', 'Exp', 'Gau', 'Nug')), fit.method=2)
 v.fit
+
+par(mar=c(2,2,1,1))
 plot(v, v.fit)
 
 #Krig to datagrid using Distance to shore and semivariance model
 krig1<- krige(depth_m~DistToShore, MEcsv, data1.grid, v.fit)
-krig_r<-raster(krig1)
+krig_r<-raster(krig1, layer='var1.pred')
+krig_var<-raster(krig1, layer='var1.var')
 
 ```
 
-```{r, fig3, fig.width = 7.5, fig.align='center', fig.height=6, echo=F}
+```{r, fig3, fig.width = 6.5, fig.align='center', fig.height=8, echo=F}
 
+par(mar=c(1,2,1,1))
+par(mfrow=c(2,1))
 plot(MEoutline2,lwd=2)
 plot(krig_r, col=rev(viridis(100)), add=T, axes=F)
 plot(MEoutline2, add=T, lwd=2)
 plot(MEcsv, add=T, pch=3, col='red')
-mtext('Depth (m)', 4,-3.5)
+mtext('Depth (m)', 4,0)
 mtext('Predicted depth using universal Kriging and distance to shore', 3,0)
 legend('topright', inset=0.1, c('Depth observation'), pch=3, col='red', bty='n')
+
+plot(MEoutline2,lwd=2)
+plot(krig_var, col=(viridis(100)), add=T, axes=F)
+plot(MEoutline2, add=T, lwd=2)
+plot(MEcsv, add=T, pch=3, col='red')
+mtext(expression(paste('Variance (m'^'2', ')')), 4,0)
+mtext('Variance', 3,0)
+legend('topright', inset=0.1, c('Depth observation'), pch=3, col='red', bty='n')
+mtext('High variance equates to low confidence in prediction', 1,0)
 
 ```
 
